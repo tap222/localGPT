@@ -2,6 +2,7 @@ import os
 import csv
 from datetime import datetime
 from constants import EMBEDDING_MODEL_NAME
+import torch
 from langchain.embeddings import HuggingFaceInstructEmbeddings
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.embeddings import HuggingFaceEmbeddings
@@ -29,9 +30,21 @@ def log_to_csv(question, answer):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         writer.writerow([timestamp, question, answer])
 
+def get_device_type():
+    if torch.backends.mps.is_available():
+        return "mps"
+    elif torch.cuda.is_available():
+        return "cuda"
+    else:
+        return "cpu"
 
-def get_embeddings(device_type="cuda"):
+def get_embeddings(device_type=None):
+    if device_type is None:
+        device_type = get_device_type()  # Dynamically detect device
+     
+    print('device_type:', device_type)
     if "instructor" in EMBEDDING_MODEL_NAME:
+        print('1')
         return HuggingFaceInstructEmbeddings(
             model_name=EMBEDDING_MODEL_NAME,
             model_kwargs={"device": device_type},
@@ -40,6 +53,7 @@ def get_embeddings(device_type="cuda"):
         )
 
     elif "bge" in EMBEDDING_MODEL_NAME:
+        print('2')
         return HuggingFaceBgeEmbeddings(
             model_name=EMBEDDING_MODEL_NAME,
             model_kwargs={"device": device_type},
@@ -47,6 +61,7 @@ def get_embeddings(device_type="cuda"):
         )
 
     else:
+        print('3')
         return HuggingFaceEmbeddings(
             model_name=EMBEDDING_MODEL_NAME,
             model_kwargs={"device": device_type},

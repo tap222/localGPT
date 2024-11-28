@@ -6,7 +6,7 @@ import utils
 from langchain.chains import RetrievalQA
 from langchain.embeddings import HuggingFaceInstructEmbeddings
 from langchain.llms import HuggingFacePipeline
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler  # for streaming response
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.callbacks.manager import CallbackManager
 
 callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
@@ -103,6 +103,7 @@ def load_model(device_type, model_id, model_basename=None, LOGGING=logging):
         # top_p=0.95,
         repetition_penalty=1.15,
         generation_config=generation_config,
+        truncation=True,
     )
 
     local_llm = HuggingFacePipeline(pipeline=pipe)
@@ -142,7 +143,6 @@ def retrieval_qa_pipline(device_type, use_history, promptTemplate_type="llama"):
     """
     if device_type == "hpu":
         from gaudi_utils.embeddings import load_embeddings
-
         embeddings = load_embeddings()
     else:
         embeddings = get_embeddings(device_type)
@@ -164,7 +164,8 @@ def retrieval_qa_pipline(device_type, use_history, promptTemplate_type="llama"):
             llm=llm,
             chain_type="stuff",  # try other chains types as well. refine, map_reduce, map_rerank
             retriever=retriever,
-            return_source_documents=True,  # verbose=True,
+            return_source_documents=True,  
+            verbose=True,
             callbacks=callback_manager,
             chain_type_kwargs={"prompt": prompt, "memory": memory},
         )
@@ -173,7 +174,8 @@ def retrieval_qa_pipline(device_type, use_history, promptTemplate_type="llama"):
             llm=llm,
             chain_type="stuff",  # try other chains types as well. refine, map_reduce, map_rerank
             retriever=retriever,
-            return_source_documents=True,  # verbose=True,
+            return_source_documents=True, 
+            verbose=True,
             callbacks=callback_manager,
             chain_type_kwargs={
                 "prompt": prompt,
@@ -266,7 +268,7 @@ def main(device_type, show_sources, use_history, model_type, save_qa):
     # check if models directory do not exist, create a new one and store models here.
     if not os.path.exists(MODELS_PATH):
         os.mkdir(MODELS_PATH)
-
+    
     qa = retrieval_qa_pipline(device_type, use_history, promptTemplate_type=model_type)
     # Interactive questions and answers
     while True:

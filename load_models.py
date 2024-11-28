@@ -8,6 +8,7 @@ if sys.platform != "darwin":
 from huggingface_hub import hf_hub_download
 from langchain.llms import LlamaCpp
 from transformers import AutoModelForCausalLM, AutoTokenizer, LlamaForCausalLM, LlamaTokenizer, BitsAndBytesConfig
+from accelerate import disk_offload
 
 from constants import CONTEXT_WINDOW_SIZE, MAX_NEW_TOKENS, MODELS_PATH, N_BATCH, N_GPU_LAYERS
 
@@ -135,19 +136,23 @@ def load_full_model(model_id, model_basename, device_type, logging):
     - Additional settings are provided for NVIDIA GPUs, such as loading in 4-bit and setting the compute dtype.
     """
 
+    offload_path = "./models/"
     if device_type.lower() in ["mps", "cpu", "hpu"]:
         logging.info("Using AutoModelForCausalLM")
         # tokenizer = LlamaTokenizer.from_pretrained(model_id, cache_dir="./models/")
         # model = LlamaForCausalLM.from_pretrained(model_id, cache_dir="./models/")
-
         model = AutoModelForCausalLM.from_pretrained(model_id,
                                             #  quantization_config=quantization_config,
                                             #  low_cpu_mem_usage=True,
                                             #  torch_dtype="auto",
                                              torch_dtype=torch.bfloat16,
-                                             device_map="auto",
+                                            #  device_map="auto",
                                              cache_dir="./models/")
 
+        # model = disk_offload(
+        #     model=model,
+        #     offload_dir=offload_path
+        # )
         tokenizer = AutoTokenizer.from_pretrained(model_id, cache_dir="./models/")
     else:
         logging.info("Using AutoModelForCausalLM for full models")
